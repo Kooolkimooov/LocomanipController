@@ -79,5 +79,8 @@ public:
 
   //! Manipulation manager
   std::shared_ptr<ManipManager> manipManager_;
+
+  //! Flag to exit the controller
+  bool exitController_ = false;
 };
 } // namespace LMC

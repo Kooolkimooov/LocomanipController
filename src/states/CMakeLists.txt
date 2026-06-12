@@ -14,4 +14,8 @@ add_fsm_state(TeleopState TeleopState.cpp)
 target_link_libraries(TeleopState PUBLIC
   ${CONTROLLER_NAME})
 
+add_fsm_state(ExitState ExitState.cpp)
+target_link_libraries(ExitState PUBLIC
+  ${CONTROLLER_NAME})
+
 add_fsm_data_directory(data)

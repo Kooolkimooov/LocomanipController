@@ -77,6 +77,11 @@ void LocomanipController::reset(const mc_control::ControllerResetData & resetDat
 
 bool LocomanipController::run()
 {
+  if(exitController_)
+  {
+    return false;
+  }
+
   t_ += dt();
 
   if(enableManagerUpdate_)
