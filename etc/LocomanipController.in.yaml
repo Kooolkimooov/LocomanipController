@@ -329,7 +329,7 @@ robots:
   obj:
     module: LMC/Cart
     init_pos:
-      translation: [0.0, 0.0, 0.0]
+      translation: [0.75, 0.0, 0.0]
 
   # Robot-specific configurations
   jvrc1:

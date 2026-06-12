@@ -82,23 +82,26 @@ void ManipManager::reset()
   // Setup ROS
   if(nh_)
   {
-    mc_rtc::log::error("[ManipManager] ROS node handle is already instantiated.");
+    mc_rtc::log::error("[ManipManager] ROS node is already instantiated.");
   }
   else
   {
-    nh_ = std::make_shared<ros::NodeHandle>();
-    // Use a dedicated queue so as not to call callbacks of other modules
-    nh_->setCallbackQueue(&callbackQueue_);
+    nh_ = std::make_shared<rclcpp::Node>(config_.name);
+    // Use a dedicated callback group so as not to call callbacks of other modules
+    callbackGroup_ = nh_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+    auto sub_opt = rclcpp::SubscriptionOptions();
+    sub_opt.callback_group = callbackGroup_;
 
     if(!config_.objPoseTopic.empty())
     {
-      objPoseSub_ =
-          nh_->subscribe<geometry_msgs::PoseStamped>(config_.objPoseTopic, 1, &ManipManager::objPoseCallback, this);
+      objPoseSub_ = nh_->create_subscription<geometry_msgs::msg::PoseStamped>(
+          config_.objPoseTopic, 1, std::bind(&ManipManager::objPoseCallback, this, std::placeholders::_1), sub_opt);
     }
     if(!config_.objVelTopic.empty())
     {
-      objVelSub_ =
-          nh_->subscribe<geometry_msgs::TwistStamped>(config_.objVelTopic, 1, &ManipManager::objVelCallback, this);
+      objVelSub_ = nh_->create_subscription<geometry_msgs::msg::TwistStamped>(
+          config_.objVelTopic, 1, std::bind(&ManipManager::objVelCallback, this, std::placeholders::_1), sub_opt);
     }
   }
 
@@ -144,8 +147,8 @@ void ManipManager::reset()
 
 void ManipManager::stop()
 {
-  objPoseSub_.shutdown();
-  objVelSub_.shutdown();
+  objPoseSub_.reset();
+  objVelSub_.reset();
   nh_.reset();
 
   removeFromGUI(*ctl().gui());
@@ -155,7 +158,7 @@ void ManipManager::stop()
 void ManipManager::update()
 {
   // Call ROS callback
-  callbackQueue_.callAvailable(ros::WallDuration());
+  rclcpp::spin_some(nh_->get_node_base_interface());
 
   if(velModeData_.enabled_)
   {
@@ -814,7 +817,7 @@ Footstep ManipManager::makeFootstep(const Foot & foot,
                   startTime + config_.footstepDuration, swingTrajConfig);
 }
 
-void ManipManager::objPoseCallback(const geometry_msgs::PoseStamped::ConstPtr & poseStMsg)
+void ManipManager::objPoseCallback(const geometry_msgs::msg::PoseStamped::ConstSharedPtr poseStMsg)
 {
   // Update real object pose
   const auto & poseMsg = poseStMsg->pose;
@@ -827,7 +830,7 @@ void ManipManager::objPoseCallback(const geometry_msgs::PoseStamped::ConstPtr & 
   ctl().realObj().posW(pose);
 }
 
-void ManipManager::objVelCallback(const geometry_msgs::TwistStamped::ConstPtr & twistStMsg)
+void ManipManager::objVelCallback(const geometry_msgs::msg::TwistStamped::ConstSharedPtr twistStMsg)
 {
   // Update real object velocity
   const auto & twistMsg = twistStMsg->twist;

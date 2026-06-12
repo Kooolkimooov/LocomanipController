@@ -9,10 +9,9 @@
 #include <mc_rtc/log/Logger.h>
 #include <mc_tasks/ImpedanceGains.h>
 
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/TwistStamped.h>
-#include <ros/callback_queue.h>
-#include <ros/ros.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <TrajColl/CubicInterpolator.h>
 
@@ -387,10 +386,10 @@ protected:
                         const mc_rtc::Configuration & swingTrajConfig = {}) const;
 
   /** \brief ROS callback of object pose topic. */
-  void objPoseCallback(const geometry_msgs::PoseStamped::ConstPtr & poseStMsg);
+  void objPoseCallback(const geometry_msgs::msg::PoseStamped::ConstSharedPtr poseStMsg);
 
   /** \brief ROS callback of object velocity topic. */
-  void objVelCallback(const geometry_msgs::TwistStamped::ConstPtr & twistStMsg);
+  void objVelCallback(const geometry_msgs::msg::TwistStamped::ConstSharedPtr twistStMsg);
 
 protected:
   //! Maximum time of interpolation endpoint
@@ -434,10 +433,10 @@ protected:
 
   //! ROS variables
   //! @{
-  std::shared_ptr<ros::NodeHandle> nh_;
-  ros::CallbackQueue callbackQueue_;
-  ros::Subscriber objPoseSub_;
-  ros::Subscriber objVelSub_;
+  rclcpp::Node::SharedPtr nh_;
+  rclcpp::CallbackGroup::SharedPtr callbackGroup_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr objPoseSub_;
+  rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr objVelSub_;
   //! @}
 };
 } // namespace LMC

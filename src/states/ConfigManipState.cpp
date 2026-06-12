@@ -144,7 +144,7 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
         {
           startTime = ctl().t() + static_cast<double>(waypointConfig("startTime"));
         }
-        double endTime;
+        double endTime = startTime;
         if(waypointConfig.has("endTime"))
         {
           endTime = ctl().t() + static_cast<double>(waypointConfig("endTime"));

@@ -13,7 +13,7 @@ LocomanipController::LocomanipController(mc_rbdyn::RobotModulePtr rm,
                                          double dt,
                                          const mc_rtc::Configuration & _config,
                                          bool allowEmptyManager)
-: BWC::BaselineWalkingController(rm, dt, _config, true)
+: BWC::BaselineWalkingController(rm, dt, _config, {}, true)
 {
   // Setup tasks
   if(config().has("HandTaskList"))

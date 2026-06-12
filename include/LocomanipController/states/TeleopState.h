@@ -2,9 +2,8 @@
 
 #include <LocomanipController/State.h>
 
-#include <geometry_msgs/Twist.h>
-#include <ros/callback_queue.h>
-#include <ros/ros.h>
+#include <geometry_msgs/msg/twist.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 namespace LMC
 {
@@ -23,7 +22,7 @@ public:
 
 protected:
   /** \brief ROS callback of twist topic. */
-  void twistCallback(const geometry_msgs::Twist::ConstPtr & twistMsg);
+  void twistCallback(const geometry_msgs::msg::Twist::ConstSharedPtr twistMsg);
 
 protected:
   //! Relative target velocity of foot midpose (x [m/s], y [m/s], theta [rad/s])
@@ -34,9 +33,8 @@ protected:
 
   //! ROS variables
   //! @{
-  std::unique_ptr<ros::NodeHandle> nh_;
-  ros::CallbackQueue callbackQueue_;
-  ros::Subscriber twistSub_;
+  rclcpp::Node::SharedPtr nh_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr twistSub_;
   //! @}
 };
 } // namespace LMC

@@ -1,4 +1,4 @@
-<package format="2">
+<package format="3">
   <name>locomanip_controller</name>
   <version>0.1.0</version>
   <description>
@@ -10,15 +10,18 @@
   <url>http://ros.org/wiki/locomanip_controller</url>
   <author>Masaki Murooka</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>baseline_walking_controller</depend>
+  <depend>rclcpp</depend>
+  <depend>geometry_msgs</depend>
 
   <build_depend>eigen</build_depend>
 
-  <exec_depend>rviz</exec_depend>
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>cnoid_ros_utils</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <exec_depend>cnoid_ros2_utils</exec_depend>
 
-  <doc_depend>doxygen</doc_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>
