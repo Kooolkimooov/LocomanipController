@@ -1,3 +1,4 @@
+#include <BaselineWalkingController/CentroidalManager.h>
 #include <BaselineWalkingController/FootManager.h>
 #include <LocomanipController/LocomanipController.h>
 #include <LocomanipController/ManipManager.h>
@@ -42,7 +43,8 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
   {
     if(config_.has("configs") && config_("configs")("preWalk", false))
     {
-      auto convertTo2d = [](const sva::PTransformd & pose) -> Eigen::Vector3d {
+      auto convertTo2d = [](const sva::PTransformd & pose) -> Eigen::Vector3d
+      {
         return Eigen::Vector3d(pose.translation().x(), pose.translation().y(),
                                mc_rbdyn::rpyFromMat(pose.rotation()).z());
       };
@@ -189,6 +191,13 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
   }
   else if(phase_ == 11)
   {
+
+    if(config_.has("configs") && config_("configs").has("CentroidalManager"))
+    {
+      ctl().centroidalManager_->config().load(config_("configs")("CentroidalManager"));
+        mc_rtc::log::info("Loaded CentroidalManager config from ConfigManipState");
+    }
+
     if(config_.has("configs") && config_("configs").has("velocityMode"))
     {
       if(ctl().t() > velModeEndTime_ - 1.0 && ctl().manipManager_->velModeEnabled())
@@ -274,6 +283,12 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
   return phase_ == 18;
 }
 
-void ConfigManipState::teardown(mc_control::fsm::Controller &) {}
+void ConfigManipState::teardown(mc_control::fsm::Controller &)
+{
+  if(config_.has("configs") && config_("configs").has("CentroidalManager"))
+  {
+    ctl().centroidalManager_->config().load(ctl().config()("CentroidalManager"));
+  }
+}
 
 EXPORT_SINGLE_STATE("LMC::ConfigManip", ConfigManipState)

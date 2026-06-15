@@ -54,8 +54,11 @@ states:
   LMC::PushCart_:
     base: LMC::ConfigManip
     configs:
+      CentroidalManager:
+        actualComOffset: [-0.2, 0, 0]
       reach: true
-      waypoints:
+      release: false
+      waypointList:
         - duration: 10.0
           relPose:
             translation: [1.0, 0, 0]
