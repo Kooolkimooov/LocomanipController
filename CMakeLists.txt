@@ -15,8 +15,8 @@ option(INSTALL_DOCUMENTATION "Generate and install the documentation" OFF)
 include(cmake/base.cmake)
 project(locomanip_controller LANGUAGES CXX)
 
-OPTION(ENABLE_CNOID "Install Choreonoid files" ON)
-OPTION(ENABLE_MUJOCO "Install MuJoCo files" OFF)
+OPTION(ENABLE_CNOID "Install Choreonoid files" OFF)
+OPTION(ENABLE_MUJOCO "Install MuJoCo files" ON)
 
 # mc_rtc
 add_project_dependency(mc_rtc REQUIRED)
