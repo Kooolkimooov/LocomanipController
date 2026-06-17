@@ -24,7 +24,6 @@ def main() -> None:
     print(data.head())
 
     for mass in masses:
-
         zmp_errors_y = []
         zmp_errors_x = []
         zmp_stds_x = []
@@ -52,8 +51,9 @@ def main() -> None:
             zmp_error_x = numpy.abs(zmp_mea_x - zmp_pla_x)
             zmp_error_y = numpy.abs(zmp_mea_y - zmp_pla_y)
 
-            zmp_error = numpy.sqrt(numpy.square(
-                zmp_error_x) + numpy.square(zmp_error_y))
+            zmp_error = numpy.sqrt(
+                numpy.square(zmp_error_x) + numpy.square(zmp_error_y)
+            )
 
             zmp_errors_x.append(numpy.nanmean(zmp_error_x))
             zmp_stds_x.append(numpy.nanstd(zmp_error_x))
@@ -64,33 +64,40 @@ def main() -> None:
             zmp_stds.append(numpy.nanstd(zmp_error))
 
             zmp_in_support_x = numpy.logical_and(
-                zmp_mea_x >= zmp_min_x, zmp_mea_x <= zmp_max_x)
+                zmp_mea_x >= zmp_min_x, zmp_mea_x <= zmp_max_x
+            )
             zmp_in_support_y = numpy.logical_and(
-                zmp_mea_y >= zmp_min_y, zmp_mea_y <= zmp_max_y)
-            zmp_in_support = numpy.logical_and(
-                zmp_in_support_x, zmp_in_support_y)
+                zmp_mea_y >= zmp_min_y, zmp_mea_y <= zmp_max_y
+            )
+            zmp_in_support = numpy.logical_and(zmp_in_support_x, zmp_in_support_y)
 
             zmp_in_supports.append(numpy.mean(zmp_in_support))
 
-        data.loc[data["mass"] == mass,
-                 "zmp_error_x"] = numpy.nanmean(zmp_error_x)
+        data.loc[data["mass"] == mass, "zmp_error_x"] = numpy.nanmean(zmp_error_x)
         data.loc[data["mass"] == mass, "zmp_std_x"] = numpy.sqrt(
-            numpy.mean(numpy.square(zmp_stds_x)))
-        data.loc[data["mass"] == mass,
-                 "zmp_error_y"] = numpy.nanmean(zmp_error_y)
+            numpy.mean(numpy.square(zmp_stds_x))
+        )
+        data.loc[data["mass"] == mass, "zmp_error_y"] = numpy.nanmean(zmp_error_y)
         data.loc[data["mass"] == mass, "zmp_std_y"] = numpy.sqrt(
-            numpy.mean(numpy.square(zmp_stds_y)))
+            numpy.mean(numpy.square(zmp_stds_y))
+        )
 
-        data.loc[data["mass"] == mass,
-                 "zmp_error"] = numpy.nanmean(zmp_error)
+        data.loc[data["mass"] == mass, "zmp_error"] = numpy.nanmean(zmp_error)
         data.loc[data["mass"] == mass, "zmp_std"] = numpy.sqrt(
-            numpy.mean(numpy.square(zmp_stds)))
+            numpy.mean(numpy.square(zmp_stds))
+        )
 
-        data.loc[data["mass"] == mass,
-                 "zmp_in_support"] = numpy.nanmean(zmp_in_supports)
+        data.loc[data["mass"] == mass, "zmp_in_support"] = numpy.nanmean(
+            zmp_in_supports
+        )
 
     print(data)
-    data.plot(x="mass", y=["zmp_in_support", "zmp_error"], secondary_y=["zmp_error"], logx=True)
+    data.plot(
+        x="mass",
+        y=["zmp_in_support", "zmp_error"],
+        secondary_y=["zmp_error"],
+        logx=True,
+    )
     plt.show()
 
 

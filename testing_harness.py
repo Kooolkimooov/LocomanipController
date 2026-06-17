@@ -2,7 +2,7 @@ import os
 import shutil
 import xml.etree.ElementTree
 
-MIN_MASS: float = 100.0
+MIN_MASS: float = 1.0
 MAX_MASS: float = 1000.0
 
 MASS_STEPS: int = 50
@@ -10,11 +10,13 @@ MASS_DISCRETIZATION_SPACE: str = "log"
 
 RUNS_REPEAT: int = 1
 
-BASE_DIR: str = "/home/martin/workspace/src/catkin_locomanip_ws/src/LocomanipController/"
+BASE_DIR: str = (
+    "/home/martin/workspace/src/catkin_locomanip_ws/src/LocomanipController/"
+)
 MUJOCO_CART_FILE: str = "mujoco/model/Cart.xml"
 URDF_CART_FILE: str = "description/urdf/Cart.urdf"
 
-LOGS_DIR = "/home/martin/workspace/src/catkin_locomanip_ws/test_logs/"
+LOGS_DIR = "test_logs/"
 
 
 def compute_masses() -> list[float]:
@@ -31,8 +33,7 @@ def compute_masses() -> list[float]:
             ]
         case _:
             raise ValueError(
-                f"Invalid MASS_DISCRETIZATION_SPACE: {
-                    MASS_DISCRETIZATION_SPACE}"
+                f"Invalid MASS_DISCRETIZATION_SPACE: {MASS_DISCRETIZATION_SPACE}"
             )
     return masses
 
@@ -63,25 +64,30 @@ def run_test() -> None:
 
 
 def save_log(mass: float, run_index: int) -> None:
-    log_file = os.path.realpath(
-        "/tmp/mc-control-LocomanipController-latest.bin")
-    shutil.copy(log_file, LOGS_DIR + f"{mass:.1f}_{run_index}.bin")
+    log_file = os.path.realpath("/tmp/mc-control-LocomanipController-latest.bin")
+    shutil.copy(log_file, BASE_DIR + LOGS_DIR + f"{mass:.1f}_{run_index}.bin")
 
 
 def main() -> None:
-    logs_dir_children = list(os.walk(LOGS_DIR))
     write_logs: bool = True
-    if os.path.exists(LOGS_DIR) and len(logs_dir_children) > 0:
+
+    if not os.path.exists(BASE_DIR + LOGS_DIR):
+        os.mkdir(BASE_DIR + LOGS_DIR)
+
+    logs_dir_children = list(os.walk(BASE_DIR + LOGS_DIR))
+
+    if len(logs_dir_children) > 0:
         answer: str = input(
             f"Logs directory {
-                LOGS_DIR} is not empty. Do you want to continue and overwrite existing logs? (y/n): "
+                BASE_DIR + LOGS_DIR
+            } is not empty. Do you want to continue and overwrite existing logs? (y/n): "
         )
         if answer.lower() != "y":
             write_logs = False
         elif answer.lower() == "y":
             for _, _, logs_files in logs_dir_children:
                 for file in logs_files:
-                    os.remove(LOGS_DIR + file)
+                    os.remove(BASE_DIR + LOGS_DIR + file)
 
     masses = compute_masses()
 
