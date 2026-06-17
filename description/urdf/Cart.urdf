@@ -1,6 +1,6 @@
 <robot name="Cart">
   <material name="green">
-    <color rgba="0.3 0.5 0.2 1" />
+    <color rgba="0.3 0.5 0.2 1"/>
   </material>
   <link name="Root">
     <inertial>
@@ -11,7 +11,7 @@
   </link>
   <link name="Body">
     <inertial>
-      <mass value="1000.0" />
+      <mass value="10.0" />
       <origin xyz="0.4 0.0 0.3" rpy="0 -0 0" />
       <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0" />
     </inertial>
