@@ -14,14 +14,14 @@ ZMP_MEA_Y = "CentroidalManager_ZMP_measured_y"
 ZMP_PLA_X = "CentroidalManager_ZMP_planned_x"
 ZMP_PLA_Y = "CentroidalManager_ZMP_planned_y"
 
+CART_POS_X = "obj_FloatingBase_position_x"
+
 
 def main() -> None:
     masses = compute_masses()
 
     data = pandas.DataFrame()
     data["mass"] = masses
-
-    print(data.head())
 
     for mass in masses:
         zmp_errors_y = []
@@ -33,6 +33,8 @@ def main() -> None:
         zmp_stds = []
 
         zmp_in_supports = []
+
+        cart_errors = []
 
         for i in range(RUNS_REPEAT):
             print(f"{mass=:.1f}, run_index={i}")
@@ -48,12 +50,16 @@ def main() -> None:
             zmp_min_y = log.get(ZMP_MIN_Y)
             zmp_max_y = log.get(ZMP_MAX_Y)
 
+            cart_pos_x = log.get(CART_POS_X)
+
             zmp_error_x = numpy.abs(zmp_mea_x - zmp_pla_x)
             zmp_error_y = numpy.abs(zmp_mea_y - zmp_pla_y)
 
             zmp_error = numpy.sqrt(
                 numpy.square(zmp_error_x) + numpy.square(zmp_error_y)
             )
+
+            cart_error = abs(cart_pos_x[-1] - (cart_pos_x[0] + 1.0))
 
             zmp_errors_x.append(numpy.nanmean(zmp_error_x))
             zmp_stds_x.append(numpy.nanstd(zmp_error_x))
@@ -73,6 +79,8 @@ def main() -> None:
 
             zmp_in_supports.append(numpy.mean(zmp_in_support))
 
+            cart_errors.append(cart_error)
+
         data.loc[data["mass"] == mass, "zmp_error_x"] = numpy.nanmean(zmp_error_x)
         data.loc[data["mass"] == mass, "zmp_std_x"] = numpy.sqrt(
             numpy.mean(numpy.square(zmp_stds_x))
@@ -91,13 +99,20 @@ def main() -> None:
             zmp_in_supports
         )
 
-    print(data)
-    data.plot(
+        data.loc[data["mass"] == mass, "cart_error"] = numpy.nanmean(cart_errors)
+
+    axes = data.plot(
         x="mass",
-        y=["zmp_in_support", "zmp_error"],
-        secondary_y=["zmp_error"],
+        y=["zmp_in_support", "zmp_error", "cart_error"],
         logx=True,
+        subplots=True,
+        legend=False,
     )
+
+    plt.xlabel("cart mass")
+    axes[0].set_ylabel("proportion of sequence in zupport region")
+    axes[1].set_ylabel("deviation from planned ZMP (m)")
+    axes[2].set_ylabel("cart error (m)")
     plt.show()
 
 
