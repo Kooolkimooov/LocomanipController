@@ -195,7 +195,6 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
     if(config_.has("configs") && config_("configs").has("CentroidalManager"))
     {
       ctl().centroidalManager_->config().load(config_("configs")("CentroidalManager"));
-        mc_rtc::log::info("Loaded CentroidalManager config from ConfigManipState");
     }
 
     if(config_.has("configs") && config_("configs").has("velocityMode"))
