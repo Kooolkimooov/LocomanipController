@@ -54,14 +54,22 @@ states:
   LMC::PushCart_:
     base: LMC::ConfigManip
     configs:
-      CentroidalManager:
-        actualComOffset: [-0.2, 0, 0]
+      # CentroidalManager:
+      #   actualComOffset: [-0.2, 0, 0]
       reach: true
       release: false
       waypointList:
         - duration: 10.0
           relPose:
             translation: [1.0, 0, 0]
+      preHandWrenches:
+        Left:
+          force: [0.0, 0.0, 0.0]
+          couple: [0.0, 0.0, 0.0]
+        Right:
+          force: [0.0, 0.0, 0.0]
+          couple: [0.0, 0.0, 0.0]
+
 
   LMC::Main_:
     base: Parallel
