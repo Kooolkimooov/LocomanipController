@@ -59,9 +59,10 @@ states:
       reach: true
       release: false
       waypointList:
-        - duration: 10.0
+        - duration: 30.0
           relPose:
-            translation: [1.0, 0, 0]
+            translation: [0, 0, 0]
+            rotation: [0, 0, 1.57]
       preHandWrenches:
         Left:
           force: [0.0, 0.0, 0.0]
