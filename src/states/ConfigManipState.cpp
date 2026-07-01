@@ -1,5 +1,9 @@
+#include <mc_rtc/logging.h>
+#include <mc_tasks/ImpedanceTask.h>
 #include <BaselineWalkingController/CentroidalManager.h>
 #include <BaselineWalkingController/FootManager.h>
+#include <Eigen/src/Core/Matrix.h>
+#include <LocomanipController/HandTypes.h>
 #include <LocomanipController/LocomanipController.h>
 #include <LocomanipController/ManipManager.h>
 #include <LocomanipController/ManipPhase.h>
@@ -191,6 +195,64 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
   }
   else if(phase_ == 11)
   {
+    // if(config_.has("configs") && !config_("configs").has("preHandWrenches"))
+    // {
+    double alpha = 0.1;
+
+    Eigen::Matrix3d right_to_left_hand_diff;
+    // x and y- are reversed in left compared to right
+    right_to_left_hand_diff << -1, 0, 0, 0, -1, 0, 0, 0, 1;
+    // std::cout << right_to_left_hand_diff;
+
+    mc_rtc::log::warning("=============================");
+
+    auto rh_measured_force = ctl().robot().forceSensor("RightHandForceSensor").force();
+    auto lh_measured_force = ctl().robot().forceSensor("LeftHandForceSensor").force();
+
+    mc_rtc::log::info("lhm {:+8.3f}, {:+8.3f}, {:+8.3f}", lh_measured_force[0], lh_measured_force[1],
+                      lh_measured_force[2]);
+    mc_rtc::log::info("rhm {:+8.3f}, {:+8.3f}, {:+8.3f}", rh_measured_force[0], rh_measured_force[1],
+                      rh_measured_force[2]);
+
+    auto measured_force = rh_measured_force + right_to_left_hand_diff * lh_measured_force;
+
+    mc_rtc::log::info("m   {:+8.3f}, {:+8.3f}, {:+8.3f}", measured_force[0], measured_force[1], measured_force[2]);
+
+    auto rh_expected_force = ctl().handTasks_.at(Hand::Right)->targetWrench().force();
+    auto lh_expected_force = ctl().handTasks_.at(Hand::Left)->targetWrench().force();
+
+    mc_rtc::log::info("lhe {:+8.3f}, {:+8.3f}, {:+8.3f}", lh_expected_force[0], lh_expected_force[1],
+                      lh_expected_force[2]);
+    mc_rtc::log::info("rhe {:+8.3f}, {:+8.3f}, {:+8.3f}", rh_expected_force[0], rh_expected_force[1],
+                      rh_expected_force[2]);
+
+    auto expected_force = rh_expected_force + right_to_left_hand_diff * lh_expected_force;
+
+    mc_rtc::log::info("e   {:+8.3f}, {:+8.3f}, {:+8.3f}", expected_force[0], expected_force[1], expected_force[2]);
+
+    auto filtered_force = alpha * measured_force + (1 - alpha) * expected_force;
+
+    mc_rtc::log::info("f   {:+8.3f}, {:+8.3f}, {:+8.3f}", filtered_force[0], filtered_force[1], filtered_force[2]);
+
+    auto new_expected_force = -filtered_force / 2;
+
+    mc_rtc::log::info("ne  {:+8.3f}, {:+8.3f}, {:+8.3f}", new_expected_force[0], new_expected_force[1],
+                      new_expected_force[2]);
+
+    auto rh_new_expected_force = new_expected_force;
+    auto lh_new_expected_force = right_to_left_hand_diff * new_expected_force;
+
+    mc_rtc::log::info("lhe {:+8.3f}, {:+8.3f}, {:+8.3f}", lh_new_expected_force[0], lh_new_expected_force[1],
+                      lh_new_expected_force[2]);
+    mc_rtc::log::info("rhe {:+8.3f}, {:+8.3f}, {:+8.3f}", rh_new_expected_force[0], rh_new_expected_force[1],
+                      rh_new_expected_force[2]);
+
+    ctl().manipManager_->setRefHandWrench(Hand::Right, {Eigen::Vector3d::Zero(), rh_new_expected_force},
+                                          ctl().t() + 1e-3, 1e-1);
+    ctl().manipManager_->setRefHandWrench(Hand::Left, {Eigen::Vector3d::Zero(), lh_new_expected_force},
+                                          ctl().t() + 1e-3, 1e-1);
+
+    // }
 
     if(config_.has("configs") && config_("configs").has("CentroidalManager"))
     {
