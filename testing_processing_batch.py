@@ -1,6 +1,6 @@
 import mc_log_ui
 import numpy
-from testing_harness import compute_masses, RUNS_REPEAT, LOGS_DIR
+from testing_harness import compute_masses, RUNS_REPEAT, LOGS_DIR, BASE_DIR
 import pandas
 import matplotlib.pyplot as plt
 
@@ -23,13 +23,14 @@ def main() -> None:
 
     masses = compute_masses()
 
-    log_dirs = glob.glob("test_logs_com+*")
+    log_dirs = glob.glob(BASE_DIR + "test_logs_mass=*")
     all_data = []
 
     for log_dir in log_dirs:
-        suffix = log_dir[len("test_logs_com+") :]
+        basename = os.path.basename(log_dir)
+        suffix = basename[len("test_logs_mass=") :]
         try:
-            com_offset = float(suffix.replace("_", "."))
+            expected_mass = float(suffix.replace("_", "."))
         except ValueError:
             continue
 
@@ -47,7 +48,7 @@ def main() -> None:
             cart_errors = []
 
             for i in range(RUNS_REPEAT):
-                print(f"com_offset={com_offset}, {mass=:.1f}, run_index={i}")
+                print(f"expected mass={expected_mass}, {mass=:.1f}, run_index={i}")
 
                 log_path = os.path.join(log_dir, f"{mass:.1f}_{i}.bin")
                 if not os.path.exists(log_path):
@@ -100,7 +101,7 @@ def main() -> None:
 
             row = {
                 "mass": mass,
-                "com_offset": com_offset,
+                "expected_mass": expected_mass,
                 "zmp_error_x": numpy.nanmean(zmp_errors_x),
                 "zmp_std_x": numpy.sqrt(numpy.mean(numpy.square(zmp_stds_x))),
                 "zmp_error_y": numpy.nanmean(zmp_errors_y),
@@ -125,14 +126,16 @@ def main() -> None:
 
     for idx, (metric, ylabel) in enumerate(zip(metrics, ylabels), 1):
         ax = fig.add_subplot(3, 1, idx, projection="3d")
-        pivoted = data.pivot(index="com_offset", columns="mass", values=metric)
+        pivoted = data.pivot(index="expected_mass", columns="mass", values=metric)
         X, Y = numpy.meshgrid(pivoted.columns, pivoted.index)
         Z = pivoted.values
 
         ax.plot_surface(X, Y, Z, cmap="viridis")
         ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_zscale("log")
         ax.set_xlabel("cart mass")
-        ax.set_ylabel("CoM offset")
+        ax.set_ylabel("expected mass")
         ax.set_zlabel(ylabel)
         ax.set_title(metric)
         ax.view_init(azim=-120)

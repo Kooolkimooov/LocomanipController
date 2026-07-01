@@ -1,8 +1,9 @@
 import mc_log_ui
 import numpy
-from testing_harness import compute_masses, RUNS_REPEAT, LOGS_DIR
+from testing_harness import compute_masses, RUNS_REPEAT, LOGS_DIR, BASE_DIR
 import pandas
 import matplotlib.pyplot as plt
+import argparse
 
 TIME = "t"
 ZMP_MIN_X = "CentroidalManager_ZMP_SupportRegion_min_x"
@@ -17,7 +18,15 @@ ZMP_PLA_Y = "CentroidalManager_ZMP_planned_y"
 CART_POS_X = "obj_FloatingBase_position_x"
 
 
-def main() -> None:
+def main(dir: str = None) -> None:
+    print(dir, type(dir), LOGS_DIR)
+    if dir is not None:
+        if dir[-1] != "/":
+            dir += "/"
+        logs_dir = dir
+    else:
+        logs_dir = LOGS_DIR
+
     masses = compute_masses()
 
     data = pandas.DataFrame()
@@ -39,7 +48,7 @@ def main() -> None:
         for i in range(RUNS_REPEAT):
             print(f"{mass=:.1f}, run_index={i}")
 
-            log = mc_log_ui.read_log(LOGS_DIR + f"{mass:.1f}_{i}.bin")
+            log = mc_log_ui.read_log(BASE_DIR + logs_dir + f"{mass:.1f}_{i}.bin")
 
             zmp_mea_x = log.get(ZMP_MEA_X)
             zmp_mea_y = log.get(ZMP_MEA_Y)
@@ -109,6 +118,7 @@ def main() -> None:
         legend=False,
     )
 
+    axes[0].set_title("stability metrics for varying cart mass")
     plt.xlabel("cart mass")
     axes[0].set_ylabel("proportion of sequence in zupport region")
     axes[1].set_ylabel("deviation from planned ZMP (m)")
@@ -117,4 +127,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--log-directory", "-d", type=str)
+    args = parser.parse_args()
+
+    main(args.log_directory)
