@@ -4,6 +4,7 @@ from testing_harness import compute_masses, RUNS_REPEAT, LOGS_DIR, BASE_DIR
 import pandas
 import matplotlib.pyplot as plt
 import argparse
+from scipy.spatial.transform import Rotation
 
 TIME = "t"
 ZMP_MIN_X = "CentroidalManager_ZMP_SupportRegion_min_x"
@@ -15,7 +16,10 @@ ZMP_MEA_Y = "CentroidalManager_ZMP_measured_y"
 ZMP_PLA_X = "CentroidalManager_ZMP_planned_x"
 ZMP_PLA_Y = "CentroidalManager_ZMP_planned_y"
 
-CART_POS_X = "obj_FloatingBase_position_x"
+CART_POS = "obj_FloatingBase_position_x"
+# CART_POS = "obj_FloatingBase_orientation_z"
+CART_POS_TARGET_OFFSET = 1.0
+# CART_POS_TARGET = -Rotation.from_rotvec([0.0, 0.0, 1.57]).as_quat()[2]
 
 
 def main(dir: str = None) -> None:
@@ -59,7 +63,7 @@ def main(dir: str = None) -> None:
             zmp_min_y = log.get(ZMP_MIN_Y)
             zmp_max_y = log.get(ZMP_MAX_Y)
 
-            cart_pos_x = log.get(CART_POS_X)
+            cart_pos = log.get(CART_POS)
 
             zmp_error_x = numpy.abs(zmp_mea_x - zmp_pla_x)
             zmp_error_y = numpy.abs(zmp_mea_y - zmp_pla_y)
@@ -68,7 +72,8 @@ def main(dir: str = None) -> None:
                 numpy.square(zmp_error_x) + numpy.square(zmp_error_y)
             )
 
-            cart_error = abs(cart_pos_x[-1] - (cart_pos_x[0] + 1.0))
+            print(cart_pos[0], cart_pos[-1], CART_POS_TARGET_OFFSET)
+            cart_error = numpy.abs(cart_pos[-1] - (cart_pos[0] + CART_POS_TARGET_OFFSET))
 
             zmp_errors_x.append(numpy.nanmean(zmp_error_x))
             zmp_stds_x.append(numpy.nanstd(zmp_error_x))
