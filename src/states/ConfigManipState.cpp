@@ -199,70 +199,25 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
     // {
     double alpha = 0.1;
 
-    Eigen::Matrix3d right_to_left_hand_diff;
-    // x and y- are reversed in left compared to right
-    right_to_left_hand_diff << -1, 0, 0, 0, -1, 0, 0, 0, 1;
-    // std::cout << right_to_left_hand_diff;
-
     Eigen::Vector3d force_projection(1, 0, 1);
     Eigen::Vector3d moment_projection(0, 1, 0);
-
-    // mc_rtc::log::warning("=============================");
 
     auto rh_measured_wrench = ctl().handTasks_.at(Hand::Right)->measuredWrench();
     auto lh_measured_wrench = ctl().handTasks_.at(Hand::Left)->measuredWrench();
 
-    // mc_rtc::log::info("lhm {:+8.3f}, {:+8.3f}, {:+8.3f}", lh_measured_wrench.force()[0],
-    // lh_measured_wrench.force()[1],
-    //                   lh_measured_wrench.force()[2]);
-    // mc_rtc::log::info("rhm {:+8.3f}, {:+8.3f}, {:+8.3f}", rh_measured_wrench.force()[0],
-    // rh_measured_wrench.force()[1],
-    //                   rh_measured_wrench.force()[2]);
-
-    sva::ForceVecd lh_measured_wrench_trans(right_to_left_hand_diff * lh_measured_wrench.couple(),
-                                            right_to_left_hand_diff * lh_measured_wrench.force());
-    auto measured_wrench = rh_measured_wrench + lh_measured_wrench_trans;
-
-    // mc_rtc::log::info("m   {:+8.3f}, {:+8.3f}, {:+8.3f}", measured_wrench.force()[0], measured_wrench.force()[1],
-    //                   measured_wrench.force()[2]);
-
     auto rh_expected_wrench = ctl().handTasks_.at(Hand::Right)->targetWrench();
     auto lh_expected_wrench = ctl().handTasks_.at(Hand::Left)->targetWrench();
 
-    // mc_rtc::log::info("lhe {:+8.3f}, {:+8.3f}, {:+8.3f}", lh_expected_wrench.force()[0],
-    // lh_expected_wrench.force()[1],
-    //                   lh_expected_wrench.force()[2]);
-    // mc_rtc::log::info("rhe {:+8.3f}, {:+8.3f}, {:+8.3f}", rh_expected_wrench.force()[0],
-    // rh_expected_wrench.force()[1],
-    //                   rh_expected_wrench.force()[2]);
+    auto rh_filtered_wrench = alpha * rh_measured_wrench + (1 - alpha) * rh_expected_wrench;
+    auto lh_filtered_wrench = alpha * lh_measured_wrench + (1 - alpha) * lh_expected_wrench;
 
-    sva::ForceVecd lh_expected_wrench_trans(right_to_left_hand_diff * lh_expected_wrench.couple(),
-                                            right_to_left_hand_diff * lh_expected_wrench.force());
-    auto expected_wrench = rh_expected_wrench + lh_expected_wrench_trans;
+    auto rh_target_wrench = rh_filtered_wrench;
+    rh_target_wrench.force() = force_projection.cwiseProduct(rh_target_wrench.force());
+    rh_target_wrench.couple() = moment_projection.cwiseProduct(rh_target_wrench.couple());
 
-    // mc_rtc::log::info("e   {:+8.3f}, {:+8.3f}, {:+8.3f}", expected_wrench.force()[0], expected_wrench.force()[1],
-    //                   expected_wrench.force()[2]);
-
-    auto filtered_wrench = alpha * measured_wrench + (1 - alpha) * expected_wrench;
-
-    // mc_rtc::log::info("f   {:+8.3f}, {:+8.3f}, {:+8.3f}", filtered_wrench.force()[0], filtered_wrench.force()[1],
-    //                   filtered_wrench.force()[2]);
-
-    auto new_expected_wrench = filtered_wrench * 0.5;
-    new_expected_wrench.force() = force_projection.cwiseProduct(new_expected_wrench.force());
-    new_expected_wrench.couple() = moment_projection.cwiseProduct(new_expected_wrench.couple());
-
-    // mc_rtc::log::info("ne  {:+8.3f}, {:+8.3f}, {:+8.3f}", new_expected_wrench.force()[0],
-    //                   new_expected_wrench.force()[1], new_expected_wrench.force()[2]);
-
-    auto rh_target_wrench = new_expected_wrench;
-    auto lh_target_wrench = sva::ForceVecd(right_to_left_hand_diff * new_expected_wrench.couple(),
-                                           right_to_left_hand_diff * new_expected_wrench.force());
-
-    // mc_rtc::log::info("lhe {:+8.3f}, {:+8.3f}, {:+8.3f}", lh_target_wrench.force()[0], lh_target_wrench.force()[1],
-    //                   lh_target_wrench.force()[2]);
-    // mc_rtc::log::info("rhe {:+8.3f}, {:+8.3f}, {:+8.3f}", rh_target_wrench.force()[0], rh_target_wrench.force()[1],
-    //                   rh_target_wrench.force()[2]);
+    auto lh_target_wrench = lh_filtered_wrench;
+    lh_target_wrench.force() = force_projection.cwiseProduct(lh_target_wrench.force());
+    lh_target_wrench.couple() = moment_projection.cwiseProduct(lh_target_wrench.couple());
 
     ctl().handTasks_.at(Hand::Right)->targetWrench(rh_target_wrench);
     ctl().handTasks_.at(Hand::Left)->targetWrench(lh_target_wrench);
