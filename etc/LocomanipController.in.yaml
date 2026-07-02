@@ -61,8 +61,8 @@ states:
       waypointList:
         - duration: 30.0
           relPose:
-            translation: [0, 0, 0]
-            rotation: [0, 0, 1.57]
+            translation: [1.0, 0, 0]
+            # rotation: [0, 0, 1.57]
       preHandWrenches:
         Left:
           force: [0.0, 0.0, 0.0]
@@ -79,10 +79,15 @@ states:
   LMC::Exit_:
     base: LMC::Exit
 
+  LMC::Pause_:
+    base: Pause
+    duration: 10
+
 # Transitions map
 transitions:
   - [LMC::Initial_, OK, LMC::PushCart_, Auto]
-  - [LMC::PushCart_, OK, LMC::Exit_, Auto]
+  - [LMC::PushCart_, OK, LMC::Pause_, Auto]
+  - [LMC::Pause_, OK, LMC::Exit_, Auto]
 # Initial state
 init: LMC::Initial_
 
