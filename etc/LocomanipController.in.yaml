@@ -57,12 +57,12 @@ states:
       # CentroidalManager:
       #   actualComOffset: [-0.2, 0, 0]
       reach: true
-      release: false
+      release: true
       waypointList:
         - duration: 30.0
           relPose:
-            translation: [1.0, 0, 0]
-            # rotation: [0, 0, 1.57]
+            # translation: [1.0, 0, 0]
+            rotation: [0, 0, 1.57]
       preHandWrenches:
         Left:
           force: [0.0, 0.0, 0.0]
