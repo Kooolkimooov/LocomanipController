@@ -206,8 +206,8 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
 
     mc_rtc::log::warning("=============================");
 
-    auto rh_measured_force = ctl().robot().forceSensor("RightHandForceSensor").force();
-    auto lh_measured_force = ctl().robot().forceSensor("LeftHandForceSensor").force();
+    auto rh_measured_force = ctl().handTasks_.at(Hand::Right)->measuredWrench().force();
+    auto lh_measured_force = ctl().handTasks_.at(Hand::Left)->measuredWrench().force();
 
     mc_rtc::log::info("lhm {:+8.3f}, {:+8.3f}, {:+8.3f}", lh_measured_force[0], lh_measured_force[1],
                       lh_measured_force[2]);
@@ -234,7 +234,7 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
 
     mc_rtc::log::info("f   {:+8.3f}, {:+8.3f}, {:+8.3f}", filtered_force[0], filtered_force[1], filtered_force[2]);
 
-    auto new_expected_force = -filtered_force / 2;
+    auto new_expected_force = filtered_force / 2.0;
 
     mc_rtc::log::info("ne  {:+8.3f}, {:+8.3f}, {:+8.3f}", new_expected_force[0], new_expected_force[1],
                       new_expected_force[2]);
@@ -247,10 +247,14 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
     mc_rtc::log::info("rhe {:+8.3f}, {:+8.3f}, {:+8.3f}", rh_new_expected_force[0], rh_new_expected_force[1],
                       rh_new_expected_force[2]);
 
-    ctl().manipManager_->setRefHandWrench(Hand::Right, {Eigen::Vector3d::Zero(), rh_new_expected_force},
-                                          ctl().t() + 1e-3, 1e-1);
-    ctl().manipManager_->setRefHandWrench(Hand::Left, {Eigen::Vector3d::Zero(), lh_new_expected_force},
-                                          ctl().t() + 1e-3, 1e-1);
+    auto rh_target_wrench = sva::ForceVecd(Eigen::Vector3d::Zero(), rh_new_expected_force);
+    auto lh_target_wrench = sva::ForceVecd(Eigen::Vector3d::Zero(), lh_new_expected_force);
+
+    ctl().handTasks_.at(Hand::Right)->targetWrench(rh_target_wrench);
+    ctl().handTasks_.at(Hand::Left)->targetWrench(lh_target_wrench);
+
+    ctl().manipManager_->setRefHandWrench(Hand::Right, rh_target_wrench, ctl().t(), ctl().dt());
+    ctl().manipManager_->setRefHandWrench(Hand::Left, lh_target_wrench, ctl().t(), ctl().dt());
 
     // }
 
