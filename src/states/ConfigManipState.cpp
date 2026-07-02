@@ -205,7 +205,7 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
     // std::cout << right_to_left_hand_diff;
 
     Eigen::Vector3d force_projection(1, 0, 1);
-    Eigen::Vector3d moment_projection(0, 0, 1);
+    Eigen::Vector3d moment_projection(0, 1, 0);
 
     // mc_rtc::log::warning("=============================");
 
