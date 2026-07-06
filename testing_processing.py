@@ -16,10 +16,10 @@ ZMP_MEA_Y = "CentroidalManager_ZMP_measured_y"
 ZMP_PLA_X = "CentroidalManager_ZMP_planned_x"
 ZMP_PLA_Y = "CentroidalManager_ZMP_planned_y"
 
-CART_POS = "obj_FloatingBase_position_x"
-# CART_POS = "obj_FloatingBase_orientation_z"
-CART_POS_TARGET_OFFSET = 1.0
-# CART_POS_TARGET = -Rotation.from_rotvec([0.0, 0.0, 1.57]).as_quat()[2]
+# CART_POS = "obj_FloatingBase_position_x"
+CART_POS = "obj_FloatingBase_orientation_z"
+# CART_POS_TARGET_OFFSET = 1.0
+CART_POS_TARGET_OFFSET = -Rotation.from_rotvec([0.0, 0.0, 1.57]).as_quat()[2]
 
 
 def main(dir: str = None) -> None:
