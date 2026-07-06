@@ -197,7 +197,7 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
   {
     // if(config_.has("configs") && !config_("configs").has("preHandWrenches"))
     // {
-    double alpha = 0.1;
+    double alpha = 0.02;
 
     Eigen::Vector3d force_projection(1, 0, 1);
     Eigen::Vector3d moment_projection(0, 1, 0);
