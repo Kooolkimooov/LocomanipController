@@ -1,4 +1,5 @@
 import mc_log_ui
+import mc_rbdyn
 import numpy
 from testing_harness import compute_masses, RUNS_REPEAT, LOGS_DIR, BASE_DIR
 import pandas
@@ -15,6 +16,8 @@ ZMP_MEA_X = "CentroidalManager_ZMP_measured_x"
 ZMP_MEA_Y = "CentroidalManager_ZMP_measured_y"
 ZMP_PLA_X = "CentroidalManager_ZMP_planned_x"
 ZMP_PLA_Y = "CentroidalManager_ZMP_planned_y"
+
+TRQ_MEA_PREFIX = "tauIn_"
 
 # CART_POS = "obj_FloatingBase_position_x"
 CART_POS = "obj_FloatingBase_orientation_z"
@@ -33,6 +36,10 @@ def main(dir: str = None) -> None:
 
     masses = compute_masses()
 
+    rm = mc_rbdyn.RobotLoader.get_robot_module("JVRC1")
+    bounds = rm.bounds()
+    ref_joint_order = rm.ref_joint_order()
+
     data = pandas.DataFrame()
     data["mass"] = masses
 
@@ -46,6 +53,7 @@ def main(dir: str = None) -> None:
         zmp_stds = []
 
         zmp_in_supports = []
+        trq_in_limits = []
 
         cart_errors = []
 
@@ -73,7 +81,9 @@ def main(dir: str = None) -> None:
             )
 
             print(cart_pos[0], cart_pos[-1], CART_POS_TARGET_OFFSET)
-            cart_error = numpy.abs(cart_pos[-1] - (cart_pos[0] + CART_POS_TARGET_OFFSET))
+            cart_error = numpy.abs(
+                cart_pos[-1] - (cart_pos[0] + CART_POS_TARGET_OFFSET)
+            )
 
             zmp_errors_x.append(numpy.nanmean(zmp_error_x))
             zmp_stds_x.append(numpy.nanstd(zmp_error_x))
@@ -92,6 +102,42 @@ def main(dir: str = None) -> None:
             zmp_in_support = numpy.logical_and(zmp_in_support_x, zmp_in_support_y)
 
             zmp_in_supports.append(numpy.mean(zmp_in_support))
+
+            trq_in_limits_all = None
+            joints = [
+                k[len(TRQ_MEA_PREFIX):]
+                for k in log.keys()
+                if k.startswith(TRQ_MEA_PREFIX) and "limits" not in k
+            ]
+            for j in joints:
+                tau = log.get(TRQ_MEA_PREFIX + j)
+
+                j_idx = int(j)
+                if j_idx < len(ref_joint_order):
+                    jn = ref_joint_order[j_idx]
+                    tau_min = bounds[4].get(jn, [numpy.nan])[0]
+                    tau_max = bounds[5].get(jn, [numpy.nan])[0]
+                else:
+                    tau_min = numpy.nan
+                    tau_max = numpy.nan
+
+                if (
+                    tau is not None
+                    and not numpy.isnan(tau_min)
+                    and not numpy.isnan(tau_max)
+                ):
+                    trq_in_limits_j = numpy.logical_and(tau >= tau_min, tau <= tau_max)
+                    if trq_in_limits_all is None:
+                        trq_in_limits_all = trq_in_limits_j
+                    else:
+                        trq_in_limits_all = numpy.logical_and(
+                            trq_in_limits_all, trq_in_limits_j
+                        )
+
+            if trq_in_limits_all is not None:
+                trq_in_limits.append(numpy.mean(trq_in_limits_all))
+            else:
+                trq_in_limits.append(numpy.nan)
 
             cart_errors.append(cart_error)
 
@@ -113,11 +159,18 @@ def main(dir: str = None) -> None:
             zmp_in_supports
         )
 
+        if len(trq_in_limits) > 0 and not numpy.all(numpy.isnan(trq_in_limits)):
+            data.loc[data["mass"] == mass, "trq_in_limits"] = numpy.nanmean(
+                trq_in_limits
+            )
+        else:
+            data.loc[data["mass"] == mass, "trq_in_limits"] = numpy.nan
+
         data.loc[data["mass"] == mass, "cart_error"] = numpy.nanmean(cart_errors)
 
     axes = data.plot(
         x="mass",
-        y=["zmp_in_support", "zmp_error", "cart_error"],
+        y=["zmp_in_support", "trq_in_limits", "zmp_error", "cart_error"],
         logx=True,
         subplots=True,
         legend=False,
@@ -126,8 +179,9 @@ def main(dir: str = None) -> None:
     axes[0].set_title("stability metrics for varying cart mass")
     plt.xlabel("cart mass")
     axes[0].set_ylabel("proportion of sequence in zupport region")
-    axes[1].set_ylabel("deviation from planned ZMP (m)")
-    axes[2].set_ylabel("cart error (m)")
+    axes[1].set_ylabel("proportion of sequence in torque limits")
+    axes[2].set_ylabel("deviation from planned ZMP (m)")
+    axes[3].set_ylabel("cart error (m)")
     plt.show()
 
 
