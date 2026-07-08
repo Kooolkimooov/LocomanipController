@@ -65,7 +65,7 @@ def set_reference_force(mass: float) -> None:
     tree = xml.etree.ElementTree.parse(BASE_DIR + MUJOCO_CART_FILE)
     root = tree.getroot()
     leaf = root.find("worldbody/body[@name='Body']/geom")
-    friction_coefficient = float(leaf.get("friction"))
+    friction_coefficient = float(leaf.get("friction").split()[0])
 
     config_yaml["states"]["LMC::PushCart_"]["configs"]["preHandWrenches"]["Left"][
         "force"
