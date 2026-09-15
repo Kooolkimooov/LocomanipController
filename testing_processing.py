@@ -54,6 +54,7 @@ def main(dir: str = None) -> None:
 
         zmp_in_supports = []
         trq_in_limits = []
+        trq_in_limits_per_joint = {}
 
         cart_errors = []
 
@@ -127,6 +128,11 @@ def main(dir: str = None) -> None:
                     and not numpy.isnan(tau_max)
                 ):
                     trq_in_limits_j = numpy.logical_and(tau >= tau_min, tau <= tau_max)
+                    
+                    if jn not in trq_in_limits_per_joint:
+                        trq_in_limits_per_joint[jn] = []
+                    trq_in_limits_per_joint[jn].append(numpy.mean(trq_in_limits_j))
+
                     if trq_in_limits_all is None:
                         trq_in_limits_all = trq_in_limits_j
                     else:
@@ -165,6 +171,12 @@ def main(dir: str = None) -> None:
             )
         else:
             data.loc[data["mass"] == mass, "trq_in_limits"] = numpy.nan
+            
+        for jn, proportions in trq_in_limits_per_joint.items():
+            if len(proportions) > 0 and not numpy.all(numpy.isnan(proportions)):
+                data.loc[data["mass"] == mass, f"trq_in_limits_{jn}"] = numpy.nanmean(proportions)
+            else:
+                data.loc[data["mass"] == mass, f"trq_in_limits_{jn}"] = numpy.nan
 
         data.loc[data["mass"] == mass, "cart_error"] = numpy.nanmean(cart_errors)
 
@@ -177,11 +189,29 @@ def main(dir: str = None) -> None:
     )
 
     axes[0].set_title("stability metrics for varying cart mass")
-    plt.xlabel("cart mass")
+    axes[-1].set_xlabel("cart mass")
     axes[0].set_ylabel("proportion of sequence in zupport region")
     axes[1].set_ylabel("proportion of sequence in torque limits")
     axes[2].set_ylabel("deviation from planned ZMP (m)")
     axes[3].set_ylabel("cart error (m)")
+    
+    trq_cols = [c for c in data.columns if c.startswith("trq_in_limits_") and c != "trq_in_limits"]
+    if trq_cols:
+        fig_trq, ax_trq = plt.subplots()
+        data.plot(
+            x="mass",
+            y=trq_cols,
+            logx=True,
+            ax=ax_trq,
+            legend=False,
+            title="Proportion of sequence in torque limit per joint"
+        )
+        ax_trq.set_ylabel("proportion of sequence in torque limits")
+        ax_trq.set_xlabel("cart mass")
+        labels = [c.replace("trq_in_limits_", "") for c in trq_cols]
+        ax_trq.legend(labels, loc='center left', bbox_to_anchor=(1, 0.5), fontsize='x-small', ncol=2)
+        plt.subplots_adjust(right=0.65)
+        
     plt.show()
 
 
