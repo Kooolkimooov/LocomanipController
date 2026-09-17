@@ -20,6 +20,9 @@ public:
   void teardown(mc_control::fsm::Controller & ctl) override;
 
 protected:
+  /** \brief Blend one shared force estimate into both hands' references. */
+  void sharedPush();
+
   //! Phase
   int phase_ = 0;
 
@@ -35,5 +38,14 @@ protected:
   //! Hand-frame axes the blend is allowed to act on
   Eigen::Vector3d adaptForceProj_ = Eigen::Vector3d(1, 0, 1);
   Eigen::Vector3d adaptMomentProj_ = Eigen::Vector3d(0, 1, 0);
+
+  //! Whether both hands share one force estimate instead of blending their own
+  bool adaptShared_ = false;
+
+  //! Shared force estimate, in world [N]
+  Eigen::Vector3d sharedForce_ = Eigen::Vector3d::Zero();
+
+  //! Whether the shared estimate has been seeded from the first measurement
+  bool sharedForceInit_ = false;
 };
 } // namespace LMC

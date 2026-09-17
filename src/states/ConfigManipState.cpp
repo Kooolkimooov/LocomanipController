@@ -12,6 +12,40 @@
 
 using namespace LMC;
 
+void ConfigManipState::sharedPush()
+{
+  // Both hands push the same object in the same world direction, so estimating
+  // per hand lets the two references drift apart and fight each other. Average
+  // the measurement in world -- the hand frames are mirrored, so averaging in
+  // either frame would cancel the push -- filter once, and split it evenly.
+  Eigen::Vector3d measured = Eigen::Vector3d::Zero();
+  for(const auto & hand : Hands::Both)
+  {
+    const auto & task = ctl().handTasks_.at(hand);
+    measured += task->surfacePose().rotation().transpose() * task->measuredWrench().force();
+  }
+  measured *= 0.5;
+
+  if(!sharedForceInit_)
+  {
+    sharedForce_ = measured;
+    sharedForceInit_ = true;
+  }
+  sharedForce_ = adaptAlpha_ * measured + (1.0 - adaptAlpha_) * sharedForce_;
+
+  for(const auto & hand : Hands::Both)
+  {
+    const auto & task = ctl().handTasks_.at(hand);
+    auto wrench = task->targetWrench();
+    wrench.force() = adaptForceProj_.cwiseProduct(task->surfacePose().rotation() * sharedForce_);
+    wrench.couple() = adaptMomentProj_.cwiseProduct(
+        adaptAlpha_ * task->measuredWrench().couple() + (1.0 - adaptAlpha_) * wrench.couple());
+
+    task->targetWrench(wrench);
+    ctl().manipManager_->setRefHandWrench(hand, wrench, ctl().t(), ctl().dt());
+  }
+}
+
 void ConfigManipState::start(mc_control::fsm::Controller & _ctl)
 {
   State::start(_ctl);
@@ -26,6 +60,7 @@ void ConfigManipState::start(mc_control::fsm::Controller & _ctl)
     adaptation("alpha", adaptAlpha_);
     adaptation("forceProjection", adaptForceProj_);
     adaptation("momentProjection", adaptMomentProj_);
+    adaptation("shared", adaptShared_);
   }
 
   output("OK");
@@ -205,7 +240,11 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
   }
   else if(phase_ == 11)
   {
-    if(adaptHandWrench_)
+    if(adaptHandWrench_ && adaptShared_)
+    {
+      sharedPush();
+    }
+    else if(adaptHandWrench_)
     {
     double alpha = adaptAlpha_;
 
