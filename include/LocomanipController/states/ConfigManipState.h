@@ -39,6 +39,9 @@ protected:
   Eigen::Vector3d adaptForceProj_ = Eigen::Vector3d(1, 0, 1);
   Eigen::Vector3d adaptMomentProj_ = Eigen::Vector3d(0, 1, 0);
 
+  //! Whether the projections are applied in world rather than the hand frame
+  bool adaptWorldProj_ = false;
+
   //! Whether both hands share one force estimate instead of blending their own
   bool adaptShared_ = false;
 

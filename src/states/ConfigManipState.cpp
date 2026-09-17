@@ -61,6 +61,7 @@ void ConfigManipState::start(mc_control::fsm::Controller & _ctl)
     adaptation("forceProjection", adaptForceProj_);
     adaptation("momentProjection", adaptMomentProj_);
     adaptation("shared", adaptShared_);
+    adaptation("worldProjection", adaptWorldProj_);
   }
 
   output("OK");
@@ -260,13 +261,23 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
     auto rh_filtered_wrench = alpha * rh_measured_wrench + (1 - alpha) * rh_expected_wrench;
     auto lh_filtered_wrench = alpha * lh_measured_wrench + (1 - alpha) * lh_expected_wrench;
 
-    auto rh_target_wrench = rh_filtered_wrench;
-    rh_target_wrench.force() = force_projection.cwiseProduct(rh_target_wrench.force());
-    rh_target_wrench.couple() = moment_projection.cwiseProduct(rh_target_wrench.couple());
+    // The hand frames are robot-specific and mirrored, so a projection meant to
+    // keep a world direction -- the horizontal plane, say -- has to be applied there.
+    auto project = [&](const Hand & hand, sva::ForceVecd wrench) {
+      if(!adaptWorldProj_)
+      {
+        wrench.force() = force_projection.cwiseProduct(wrench.force());
+        wrench.couple() = moment_projection.cwiseProduct(wrench.couple());
+        return wrench;
+      }
+      const Eigen::Matrix3d & E = ctl().handTasks_.at(hand)->surfacePose().rotation();
+      wrench.force() = E * force_projection.cwiseProduct(E.transpose() * wrench.force());
+      wrench.couple() = E * moment_projection.cwiseProduct(E.transpose() * wrench.couple());
+      return wrench;
+    };
 
-    auto lh_target_wrench = lh_filtered_wrench;
-    lh_target_wrench.force() = force_projection.cwiseProduct(lh_target_wrench.force());
-    lh_target_wrench.couple() = moment_projection.cwiseProduct(lh_target_wrench.couple());
+    auto rh_target_wrench = project(Hand::Right, rh_filtered_wrench);
+    auto lh_target_wrench = project(Hand::Left, lh_filtered_wrench);
 
     ctl().handTasks_.at(Hand::Right)->targetWrench(rh_target_wrench);
     ctl().handTasks_.at(Hand::Left)->targetWrench(lh_target_wrench);
