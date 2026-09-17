@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <mc_rtc/gui/Button.h>
 #include <mc_tasks/CoMTask.h>
 #include <mc_tasks/FirstOrderImpedanceTask.h>
@@ -75,9 +77,17 @@ bool InitialState::run(mc_control::fsm::Controller &)
     // Send commands to gripper
     if(config_.has("configs") && config_("configs").has("gripperCommands"))
     {
+      constexpr double gripperRetryDuration = 5.0; // [sec]
+      gripperRetryEndTime_ = ctl().t() + gripperRetryDuration;
+
       for(const auto & gripperCommandConfig : config_("configs")("gripperCommands"))
       {
-        ctl().robot().gripper(gripperCommandConfig("name")).configure(gripperCommandConfig);
+        const std::string name = gripperCommandConfig("name");
+        ctl().robot().gripper(name).configure(gripperCommandConfig);
+        if(gripperCommandConfig.has("opening"))
+        {
+          gripperOpenings_.emplace(name, static_cast<double>(gripperCommandConfig("opening")));
+        }
       }
     }
 
@@ -97,6 +107,8 @@ bool InitialState::run(mc_control::fsm::Controller &)
     ctl().footManager_->addToLogger(ctl().logger());
     ctl().centroidalManager_->addToLogger(ctl().logger());
   }
+
+  retryGripperCommands();
 
   // Interpolate task stiffness
   if(stiffnessRatioFunc_)
@@ -118,6 +130,27 @@ bool InitialState::run(mc_control::fsm::Controller &)
   }
 
   return complete();
+}
+
+void InitialState::retryGripperCommands()
+{
+  // The gripper safety trips on the transient right after the controller starts:
+  // the command outruns the joint, mc_rtc latches it where the joint stands, and
+  // the opening is abandoned mid-travel. A fresh command clears the latch.
+  if(gripperOpenings_.empty() || ctl().t() > gripperRetryEndTime_)
+  {
+    return;
+  }
+
+  constexpr double openingTolerance = 0.02;
+  for(const auto & [name, opening] : gripperOpenings_)
+  {
+    auto & gripper = ctl().robot().gripper(name);
+    if(gripper.complete() && std::abs(gripper.opening() - opening) > openingTolerance)
+    {
+      gripper.setTargetOpening(opening);
+    }
+  }
 }
 
 void InitialState::teardown(mc_control::fsm::Controller &) {}

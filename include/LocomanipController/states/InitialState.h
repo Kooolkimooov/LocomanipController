@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <unordered_map>
+
 #include <LocomanipController/State.h>
 
 namespace LMC
@@ -21,6 +24,9 @@ protected:
   /** \brief Check whether state is completed. */
   bool complete() const;
 
+  /** \brief Re-send gripper commands that the gripper safety cut short. */
+  void retryGripperCommands();
+
 protected:
   //! Phase
   int phase_ = 0;
@@ -36,5 +42,11 @@ protected:
 
   //! Stiffness of foot tasks
   std::unordered_map<Foot, Eigen::Vector6d> footTasksStiffness_;
+
+  //! Requested opening per gripper, kept to detect a command cut short
+  std::unordered_map<std::string, double> gripperOpenings_;
+
+  //! Time until which a cut-short gripper command is re-sent [sec]
+  double gripperRetryEndTime_ = 0.0;
 };
 } // namespace LMC
