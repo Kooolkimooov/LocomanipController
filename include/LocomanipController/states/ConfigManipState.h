@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Eigen/Core>
+
 #include <LocomanipController/State.h>
 
 namespace LMC
@@ -23,5 +25,15 @@ protected:
 
   //! End time of velocity mode [sec]
   double velModeEndTime_ = 0.0;
+
+  //! Whether the push phase blends the measured hand wrench into the target
+  bool adaptHandWrench_ = true;
+
+  //! Blend coefficient per control cycle; its time constant is dt / alpha
+  double adaptAlpha_ = 0.02;
+
+  //! Hand-frame axes the blend is allowed to act on
+  Eigen::Vector3d adaptForceProj_ = Eigen::Vector3d(1, 0, 1);
+  Eigen::Vector3d adaptMomentProj_ = Eigen::Vector3d(0, 1, 0);
 };
 } // namespace LMC

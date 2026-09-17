@@ -18,6 +18,16 @@ void ConfigManipState::start(mc_control::fsm::Controller & _ctl)
 
   phase_ = 0;
 
+  // Defaults reproduce the hardcoded behaviour this used to have.
+  if(config_.has("configs") && config_("configs").has("HandWrenchAdaptation"))
+  {
+    const auto adaptation = config_("configs")("HandWrenchAdaptation");
+    adaptation("enable", adaptHandWrench_);
+    adaptation("alpha", adaptAlpha_);
+    adaptation("forceProjection", adaptForceProj_);
+    adaptation("momentProjection", adaptMomentProj_);
+  }
+
   output("OK");
 }
 
@@ -195,12 +205,12 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
   }
   else if(phase_ == 11)
   {
-    // if(config_.has("configs") && !config_("configs").has("preHandWrenches"))
-    // {
-    double alpha = 0.02;
+    if(adaptHandWrench_)
+    {
+    double alpha = adaptAlpha_;
 
-    Eigen::Vector3d force_projection(1, 0, 1);
-    Eigen::Vector3d moment_projection(0, 1, 0);
+    Eigen::Vector3d force_projection = adaptForceProj_;
+    Eigen::Vector3d moment_projection = adaptMomentProj_;
 
     auto rh_measured_wrench = ctl().handTasks_.at(Hand::Right)->measuredWrench();
     auto lh_measured_wrench = ctl().handTasks_.at(Hand::Left)->measuredWrench();
@@ -224,8 +234,7 @@ bool ConfigManipState::run(mc_control::fsm::Controller &)
 
     ctl().manipManager_->setRefHandWrench(Hand::Right, rh_target_wrench, ctl().t(), ctl().dt());
     ctl().manipManager_->setRefHandWrench(Hand::Left, lh_target_wrench, ctl().t(), ctl().dt());
-
-    // }
+    }
 
     if(config_.has("configs") && config_("configs").has("CentroidalManager"))
     {

@@ -19,6 +19,7 @@ void ManipManager::Configuration::load(const mc_rtc::Configuration & mcRtcConfig
   mcRtcConfig("name", name);
   mcRtcConfig("objPoseInterpolator", objPoseInterpolator);
   mcRtcConfig("objHorizon", objHorizon);
+  mcRtcConfig("enableRos", enableRos);
   mcRtcConfig("objPoseTopic", objPoseTopic);
   mcRtcConfig("objVelTopic", objVelTopic);
   mcRtcConfig("handTaskStiffness", handTaskStiffness);
@@ -80,11 +81,11 @@ ManipManager::ManipManager(LocomanipController * ctlPtr, const mc_rtc::Configura
 void ManipManager::reset()
 {
   // Setup ROS
-  if(nh_)
+  if(config_.enableRos && nh_)
   {
     mc_rtc::log::error("[ManipManager] ROS node is already instantiated.");
   }
-  else
+  else if(config_.enableRos)
   {
     nh_ = std::make_shared<rclcpp::Node>(config_.name);
     // Use a dedicated callback group so as not to call callbacks of other modules
@@ -158,7 +159,7 @@ void ManipManager::stop()
 void ManipManager::update()
 {
   // Call ROS callback
-  rclcpp::spin_some(nh_->get_node_base_interface());
+  if(nh_) { rclcpp::spin_some(nh_->get_node_base_interface()); }
 
   if(velModeData_.enabled_)
   {

@@ -17,6 +17,7 @@
 
 #include <LocomanipController/FootTypes.h>
 #include <LocomanipController/HandTypes.h>
+#include <LocomanipController/ManipPhase.h>
 
 namespace LMC
 {
@@ -77,6 +78,8 @@ public:
     double objHorizon = 2.0;
 
     //! Object pose topic name (not subscribe if empty)
+    bool enableRos = true;
+
     std::string objPoseTopic;
 
     //! Object velocity topic name (not subscribe if empty)
@@ -297,6 +300,12 @@ public:
   {
     return static_cast<bool>(objPoseOffsetFunc_);
   };
+
+  double numericPhase(const Hand & hand) const
+  {
+    auto it = manipPhases_.find(hand);
+    return it == manipPhases_.end() ? 0.0 : static_cast<double>(it->second->label());
+  }
 
   /** \brief Get manipulation phase. */
   inline const std::shared_ptr<ManipPhase::Base> & manipPhase(const Hand & hand) const

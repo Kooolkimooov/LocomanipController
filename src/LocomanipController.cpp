@@ -65,6 +65,24 @@ LocomanipController::LocomanipController(mc_rbdyn::RobotModulePtr rm,
     mc_rtc::log::warning("[LocomanipController] ManipManager configuration is missing.");
   }
 
+  if(config().has("DemoFSM"))
+  {
+    const auto demo = config()("DemoFSM");
+    factory_.load(demo("states"));
+    executor_.init(*this, demo);
+  }
+  datastore().make_call("Locomanip::objectReferencePosition", [this]() -> Eigen::Vector3d
+                       { return obj().posW().translation(); });
+  datastore().make_call("Locomanip::objectReferenceRpy", [this]() -> Eigen::Vector3d
+                       { return mc_rbdyn::rpyFromMat(obj().posW().rotation()); });
+  datastore().make_call("Locomanip::leftPhase", [this]() -> double
+                       { return manipManager_ ? manipManager_->numericPhase(Hand::Left) : 0.0; });
+  datastore().make_call("Locomanip::rightPhase", [this]() -> double
+                       { return manipManager_ ? manipManager_->numericPhase(Hand::Right) : 0.0; });
+  const auto completion = config()("CompletionState", std::string{});
+  datastore().make_call("Locomanip::complete", [this, completion]() -> double
+                       { return !completion.empty() && executor_.state() == completion ? 1.0 : 0.0; });
+
   mc_rtc::log::success("[LocomanipController] Constructed.");
 }
 
