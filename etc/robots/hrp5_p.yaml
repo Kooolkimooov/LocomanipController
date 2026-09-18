@@ -1,0 +1,72 @@
+# HRP5P's configuration for this controller. mc_rtc's MCController::robot_config()
+# reads it by ROBOT MODULE name (hrp5_p, never the HRP5P alias) and loads it into
+# robots/hrp5_p, which BaselineWalkingController's constructor then merges at the
+# configuration root -- before OverwriteConfigList, so a caller can still override
+# any of it.
+#
+# mc_hrp5_p installs its own etc/controllers/LocomanipController/hrp5_p.yaml to
+# this same destination, and only one of the two is ever read. This file is
+# therefore the complete configuration, not a supplement: everything above
+# HandTaskList is that file's content, kept so installing either package leaves
+# HRP5P configured the same way.
+
+PostureTask:
+  jointWeights:
+    WP: 50
+    WR: 50
+    WY: 50
+
+CoMTask:
+  activeJoints: [
+  "Root",
+  "LCY", "LCR", "LCP", "LKP", "LAP", "LAR",
+  "RCY", "RCR", "RCP", "RKP", "RAP", "RAR"]
+
+BaseOrientationTask:
+  frame: Chest_Link2
+
+FootManager:
+  footstepDuration: 0.9 # [sec]
+  doubleSupportRatio: 0.15 # []
+  impedanceGains:
+    SingleSupport:
+      spring:
+        linear: [2250, 2250, 450] # Weaken Z-component spring to avoid a too fast recovery for mass errors
+
+CentroidalManager:
+  dcmGainP: 2.0 # It must be greater than 1 to be stable
+  comZGainP: 20000.0
+  refComZ: 0.95 # [m]
+  method: PreviewControlZmp
+  horizonDuration: 2.0 # [sec]
+  horizonDt: 0.002 # [sec]
+
+# HRP5P has no gripper surfaces, so the hands grasp on the flat close-contact
+# surfaces instead of the JVRC1 frames the base configuration names. Those
+# surfaces are rolled 180 degrees about their local x against JVRC1's, which is
+# why the hand transforms differ and why the pre-reach approach changes sign.
+HandTaskList:
+  - type: impedance
+    hand: Left
+    frame: LeftHandCloseContact
+    stiffness: 1000.0
+    weight: 1000.0
+  - type: impedance
+    hand: Right
+    frame: RightHandCloseContact
+    stiffness: 1000.0
+    weight: 1000.0
+
+ManipManager:
+  objToHandTranss:
+    Left:
+      translation: [-0.35, 0.3, 1.0] # [m]
+      rotation: [0.560986, -0.430459, 0.430459, 0.560986]
+    Right:
+      translation: [-0.35, -0.3, 1.0] # [m]
+      rotation: [0.560986, 0.430459, 0.430459, -0.560986]
+  preReachTranss:
+    Left:
+      translation: [0, 0, 0.15] # [m]
+    Right:
+      translation: [0, 0, 0.15] # [m]

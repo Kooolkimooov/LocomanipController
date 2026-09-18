@@ -52,6 +52,14 @@ endif()
 configure_file(etc/LocomanipController.in.yaml ${CONFIG_OUT} @ONLY)
 install(FILES ${CONFIG_OUT} DESTINATION ${MC_RTC_LIBDIR}/mc_controller/etc/)
 
+# Per-robot configuration, keyed by robot MODULE name. JVRC1 needs no file: the
+# robots/jvrc1 section of the configuration above is already its own.
+set(ROBOTS hrp5_p)
+foreach(ROBOT ${ROBOTS})
+  install_controller_robot_configuration(LocomanipController
+                                         etc/robots/${ROBOT}.yaml)
+endforeach()
+
 configure_file(etc/mc_rtc.in.yaml etc/mc_rtc.yaml @ONLY)
 
 add_subdirectory(src)
