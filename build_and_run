@@ -1,5 +1,6 @@
 #!/bin/sh
 # Build and run the controller using nvidia gpu when the latter is set on on-demand mode.
 
+cd ../../ || exit
 colcon build --merge-install || exit
 __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia mc_mujoco -f ./build/locomanip_controller/etc/mc_rtc.yaml
