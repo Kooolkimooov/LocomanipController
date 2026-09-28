@@ -83,9 +83,11 @@ states:
   LMC::Exit_:
     base: LMC::Exit
 
+  # The host ends the run, not the FSM: a short pause would reach LMC::Exit_ and
+  # stop the controller inside an mjlab episode, which outlives the push cycle.
   LMC::Pause_:
     base: Pause
-    duration: 10
+    duration: 3600
 
 # Transitions map
 transitions:
@@ -94,6 +96,8 @@ transitions:
   - [LMC::Pause_, OK, LMC::Exit_, Auto]
 # Initial state
 init: LMC::Initial_
+# The state Locomanip::complete reports as the finished cycle
+CompletionState: LMC::Pause_
 
 ObserverPipelines:
   name: MainObserverPipeline
@@ -229,6 +233,8 @@ FootManager:
 
 ManipManager:
   name: ManipManager
+  # No ROS node, subscriptions or spinning: the object pose comes from the host.
+  enableRos: false
   objPoseInterpolator: BangBang
   objHorizon: 3.0 # [sec]
   objPoseTopic: /object/pose

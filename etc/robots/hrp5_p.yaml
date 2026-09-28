@@ -37,7 +37,7 @@ CentroidalManager:
   dcmGainP: 2.0 # It must be greater than 1 to be stable
   comZGainP: 20000.0
   refComZ: 0.95 # [m]
-  method: PreviewControlZmp
+  method: PreviewControlExtZmp
   horizonDuration: 2.0 # [sec]
   horizonDt: 0.002 # [sec]
 

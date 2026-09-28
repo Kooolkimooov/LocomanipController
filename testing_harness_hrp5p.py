@@ -26,6 +26,11 @@ LOGS_DIR: str = "test_logs_hrp5p/"
 LOG_FILE: str = "/tmp/mc-control-LocomanipController-latest.bin"
 CONTROLLER_CONFIG: str = "etc/LocomanipController.in.yaml"
 
+#: How long to keep watching after the push ends. LMC::Pause_ now holds for an
+#: hour so an mjlab episode can outlive the cycle, so the window that used to be
+#: its duration -- the robot's chance to topple once it lets go -- is this.
+PAUSE_SETTLE_S: float = 10.0
+
 #: Push-phase hand-wrench settings. Local y is the push axis on both hands (the
 #: frames are mirrored, so it maps to world +x on the right and -x on the left);
 #: local x is the vertical press. The shipped projection therefore zeroes the
@@ -332,6 +337,7 @@ def run_test(timeout: float) -> str:
     deadline = time.monotonic() + timeout
     tail: collections.deque[str] = collections.deque(maxlen=15)
     pushed = False
+    settled: float | None = None
     assert process.stdout is not None
     for line in process.stdout:
         tail.append(line.rstrip())
@@ -339,10 +345,13 @@ def run_test(timeout: float) -> str:
         # about whether it could push the load; score that as a completed push.
         if "Starting state LMC::Pause_" in line:
             pushed = True
+            settled = time.monotonic() + PAUSE_SETTLE_S
         if "QP failed to run()" in line:
             verdict = "pushed" if pushed else "qp_failed"
             break
-        if "Starting state LMC::Exit_" in line:
+        # LMC::Pause_ holds rather than reaching LMC::Exit_, so the settle window
+        # is what says the robot survived the release.
+        if settled is not None and time.monotonic() > settled:
             verdict = "completed"
             break
         if time.monotonic() > deadline:
